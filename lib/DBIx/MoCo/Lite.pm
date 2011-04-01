@@ -14,12 +14,6 @@ __PACKAGE__->mk_classdata(list_class => 'DBIx::MoCo::Lite::List');
 
 __PACKAGE__->mk_classdata("_$_") for qw(sql_builder table primary_keys unique_keys);
 
-sub __classdata : lvalue {
-    my ($class, $name) = @_;
-    no strict 'refs';
-    ${"$class\::$name"};
-}
-
 sub new {
     my $class = shift;
     return bless { @_ }, $class;
@@ -31,8 +25,8 @@ sub sql_builder {
     return $class->_sql_builder($_[0]) if @_;
     return $class->_sql_builder if $class->_sql_builder;
 
-    require SQL::Abstract;
-    return $class->_sql_builder(SQL::Abstract->new);
+    require DBIx::MoCo::Lite::SQLBuilder;
+    return $class->_sql_builder(DBIx::MoCo::Lite::SQLBuilder->new);
 }
 
 sub table {
@@ -41,6 +35,7 @@ sub table {
     return $class->_table($_[0]) if @_;
     return $class->_table if $class->_table;
 
+    # guess
     my $base = do { no strict 'refs'; ${"$class\::ISA"}[0] };
     my $table = $class;
     $table =~ s/^$base\:://;

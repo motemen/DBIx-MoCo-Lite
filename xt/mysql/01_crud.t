@@ -78,6 +78,9 @@ is     $foos->[0]->bar->value, 'blah';
     pass 'DBI::st::execute not called';
 }
 
+is +t::MoCo::Foo->search(where => [ 'id IN (:id)', id => [ 1, 3 ] ])->size, 2;
+is +t::MoCo::Foo->search(where => [ 'id = (:id)', id => 2 ])->size, 1;
+
 $foos->[1]->delete;
 
 is +t::MoCo::Foo->search->size, 2;
