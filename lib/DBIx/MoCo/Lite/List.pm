@@ -15,9 +15,8 @@ sub map_relation {
 
     return $self->make_empty_list unless @$self;
 
-    my $rel_info = $DBIx::MoCo::Lite::Relation->{ ref $self->[0] }->{ $name } or croak; # FIXME
+    my $rel_info = $self->_get_relation_info($name) or croak;
     my ($model, $our_key, $their_key) = @$rel_info;
-
     return $model->find_multi($their_key => [ map { $_->{$our_key} } @$self ]);
 }
 

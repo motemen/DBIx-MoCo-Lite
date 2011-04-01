@@ -12,52 +12,17 @@ our $VERSION = '0.01';
 __PACKAGE__->mk_classdata('db');
 __PACKAGE__->mk_classdata(list_class => 'DBIx::MoCo::Lite::List');
 
-__PACKAGE__->mk_classdata("_$_") for qw(sql_builder table primary_keys unique_keys);
-
 sub new {
     my $class = shift;
     return bless { @_ }, $class;
-}
-
-sub sql_builder {
-    my $class = shift;
-
-    return $class->_sql_builder($_[0]) if @_;
-    return $class->_sql_builder if $class->_sql_builder;
-
-    require DBIx::MoCo::Lite::SQLBuilder;
-    return $class->_sql_builder(DBIx::MoCo::Lite::SQLBuilder->new);
-}
-
-sub table {
-    my $class = shift;
-
-    return $class->_table($_[0]) if @_;
-    return $class->_table if $class->_table;
-
-    # guess
-    my $base = do { no strict 'refs'; ${"$class\::ISA"}[0] };
-    my $table = $class;
-    $table =~ s/^$base\:://;
-    $table = lc join '_', grep { length $_ } split /::|([A-Z]+[a-z]*)/, $table;
-    return $class->_table($table);
-}
-
-sub primary_keys {
-    my $class = shift;
-
-    return $class->_primary_keys if $class->_primary_keys;
-    return $class->_primary_keys([ $class->db->dbh->primary_key(undef, undef, $class->table) ]);
-}
-
-sub unique_keys {
-    []; # TODO
 }
 
 ### CRUD
 
 sub search {
     my ($class, %args) = @_;
+
+    # TODO limit/offset
 
     my ($sql, @binds) = $class->_build_sql(select => $args{field}, $args{where}, $args{order});
     $class->db->execute($sql, \my $data, \@binds);
@@ -181,6 +146,13 @@ sub has_a {
     *{"$class\::$name"} = $code;
 }
 
+sub _get_relation_info {
+    my ($class, $name) = @_;
+    $class = ref $class if ref $class;
+    my $info = $Relations->{$class}->{$name} or return;
+    return @$info;
+}
+
 ### Columns
 
 sub AUTOLOAD {
@@ -238,6 +210,59 @@ sub __changed_cols {
 sub __original_set {
     my $self = shift;
     return $self->__property(__original_set => @_);
+}
+
+### Class properties
+
+__PACKAGE__->mk_classdata("_$_") for qw(sql_builder table primary_keys unique_keys columns);
+
+sub sql_builder {
+    my $class = shift;
+
+    return $class->_sql_builder($_[0]) if @_;
+    return $class->_sql_builder if $class->_sql_builder;
+
+    require DBIx::MoCo::Lite::SQLBuilder;
+    return $class->_sql_builder(DBIx::MoCo::Lite::SQLBuilder->new);
+}
+
+sub table {
+    my $class = shift;
+
+    return $class->_table($_[0]) if @_;
+    return $class->_table if $class->_table;
+
+    # guess
+    my $base = do { no strict 'refs'; ${"$class\::ISA"}[0] };
+    my $table = $class;
+    $table =~ s/^$base\:://;
+    $table = lc join '_', grep { defined $_ && length $_ } split /::|([A-Z]+[a-z]*)/, $table;
+    return $class->_table($table);
+}
+
+sub primary_keys {
+    my $class = shift;
+
+    return $class->_primary_keys if $class->_primary_keys;
+    return $class->_primary_keys([ $class->db->dbh->primary_key(undef, undef, $class->table) ]);
+}
+
+sub unique_keys {
+    []; # TODO
+}
+
+sub columns {
+    my $class = shift;
+    
+    return $class->_columns if $class->_columns;
+
+    if (my $sth = $class->db->dbh->column_info(undef, undef, $class->table, undef)) {
+        confess $class->db->dbh->errstr if $class->db->dbh->err;
+        my $cols = $sth->fetchall_arrayref({}) or confess $sth->errstr;
+        return $class->_columns([ map { $_->{COLUMN_NAME} } @$cols ]);
+    } else {
+        die 'TODO';
+    }
 }
 
 1;

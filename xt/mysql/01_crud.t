@@ -44,9 +44,13 @@ __CREATE_TABLE__
 
     package t::MoCo::Bar;
     use parent -norequire => 't::MoCo';
+
+    package t::MoCo::Abc::DefGhi;
+    use parent -norequire => 't::MoCo';
 }
 
-is +t::MoCo::Foo->table, 'foo';
+is +t::MoCo::Foo->table, 'foo', 'MoCo::Foo->table';
+is +t::MoCo::Abc::DefGhi->table, 'abc_def_ghi', 'MoCo::Abc::DefGhi->table';
 
 ok my $foo1 = t::MoCo::Foo->create(value => 'abc'), 'create';
 ok my $foo2 = t::MoCo::Foo->create(value => 'def'), 'create';
@@ -79,7 +83,7 @@ is     $foos->[0]->bar->value, 'blah';
 }
 
 is +t::MoCo::Foo->search(where => [ 'id IN (:id)', id => [ 1, 3 ] ])->size, 2;
-is +t::MoCo::Foo->search(where => [ 'id = (:id)', id => 2 ])->size, 1;
+is +t::MoCo::Foo->search(where => [ 'id = :id', id => 2 ])->size, 1;
 
 $foos->[1]->delete;
 
