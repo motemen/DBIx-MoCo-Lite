@@ -4,6 +4,8 @@ use warnings;
 use parent 'List::Rubyish';
 use Carp;
 
+our @CARP_NOT = qw(DBIx::MoCo::Lite);
+
 sub make_empty_list {
     my $self = shift;
     my $class = ref $self || $self;

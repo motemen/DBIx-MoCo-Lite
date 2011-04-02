@@ -89,4 +89,8 @@ $foos->[1]->delete;
 
 is +t::MoCo::Foo->search->size, 2;
 
+t::MoCo::Foo->create for 1 .. 10;
+
+is +t::MoCo::Foo->search(offset => 3, limit => 5, order => 'id')->size, 5;
+
 done_testing;

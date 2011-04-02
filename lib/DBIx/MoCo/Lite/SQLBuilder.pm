@@ -4,6 +4,8 @@ use warnings;
 use parent 'SQL::Abstract';
 use Carp;
 
+our @CARP_NOT = qw(DBIx::MoCo::Lite);
+
 sub _where_ARRAYREF {
     my ($self, $where) = @_;
 
@@ -19,6 +21,21 @@ sub _where_ARRAYREF {
     /ge;
 
     return ($sql, @values);
+}
+
+sub select {
+    my $self = shift;
+    my ($table, $field, $where, $order, $limit, $offset) = @_;
+    my ($sql, @binds) = $self->SUPER::select(@_);
+    if (defined $limit) {
+        croak qq(Non numeric limit '$limit') if $limit =~ /\D/;
+        $sql .= ' LIMIT ' . int($limit);
+        if (defined $offset) {
+            croak qq(Non numeric offset '$offset') if $offset =~ /\D/;
+            $sql .= ' OFFSET ' . int($offset);
+        }
+    }
+    return ($sql, @binds);
 }
 
 1;

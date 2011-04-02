@@ -5,6 +5,7 @@ use parent 'Class::Data::Inheritable';
 use Carp qw(croak);
 use Scalar::Util qw(blessed refaddr);
 use List::MoreUtils qw(all);
+use Params::Validate qw(validate);
 use Class::Load;
 
 our $VERSION = '0.01';
@@ -20,11 +21,10 @@ sub new {
 ### CRUD
 
 sub search {
-    my ($class, %args) = @_;
+    my $class = shift;
+    my %args  = validate(@_, { field => 0, where => 0, order => 0, offset => 0, limit => 0 });
 
-    # TODO limit/offset
-
-    my ($sql, @binds) = $class->_build_sql(select => $args{field}, $args{where}, $args{order});
+    my ($sql, @binds) = $class->_build_sql(select => $args{field}, $args{where}, $args{order}, $args{limit}, $args{offset});
     $class->db->execute($sql, \my $data, \@binds);
 
     my @rows = map { $class->new(%$_) } @$data;
@@ -97,11 +97,10 @@ sub _unique_condition {
     my $self = shift;
     my $class = ref $self;
 
-    my $cond = {};
-
     foreach my $ukey ($class->primary_keys, @{ $class->unique_keys }) {
         my @ukeys = ref $ukey eq 'ARRAY' ? @$ukey : ( $ukey );
         if (all { defined $self->{$_} } @ukeys) {
+            my $cond = {};
             $cond->{ $_ } = $self->{ $_ } for @ukeys;
             return $cond;
         }
@@ -200,6 +199,12 @@ sub __build_property {
     return $self->__property($name => $self->$builder);
 }
 
+sub DESTROY {
+    my $self = shift;
+    my $id = refaddr $self;
+    delete $InsideOut->{$id};
+}
+
 ## Predefined property
 
 sub __changed_cols {
@@ -223,7 +228,7 @@ sub sql_builder {
     return $class->_sql_builder if $class->_sql_builder;
 
     require DBIx::MoCo::Lite::SQLBuilder;
-    return $class->_sql_builder(DBIx::MoCo::Lite::SQLBuilder->new);
+    return $class->_sql_builder(DBIx::MoCo::Lite::SQLBuilder->new(limit_dialect => $class->db->dbh));
 }
 
 sub table {

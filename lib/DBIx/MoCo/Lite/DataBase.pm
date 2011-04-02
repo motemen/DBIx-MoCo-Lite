@@ -5,6 +5,8 @@ use parent 'Class::Data::Inheritable';
 use DBI;
 use Carp;
 
+our @CARP_NOT = qw(DBIx::MoCo::Lite);
+
 __PACKAGE__->mk_classdata('dsn');
 __PACKAGE__->mk_classdata('username');
 __PACKAGE__->mk_classdata('password');
