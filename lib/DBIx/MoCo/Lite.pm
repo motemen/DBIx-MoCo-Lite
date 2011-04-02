@@ -36,7 +36,7 @@ sub search {
 
 sub find {
     my ($class, %cond) = @_;
-    return $class->search(where => \%cond)->[0];
+    return $class->search(where => \%cond, limit => 1)->[0];
 }
 
 sub find_multi {
@@ -100,9 +100,9 @@ sub _unique_condition {
     foreach my $ukey ($class->primary_keys, @{ $class->unique_keys }) {
         my @ukeys = ref $ukey eq 'ARRAY' ? @$ukey : ( $ukey );
         if (all { defined $self->{$_} } @ukeys) {
-            my $cond = {};
-            $cond->{ $_ } = $self->{ $_ } for @ukeys;
-            return $cond;
+            return +{
+                map { ( $_ => $self->{$_} ) } @ukeys
+            };
         }
     }
 
@@ -161,7 +161,7 @@ sub AUTOLOAD {
         croak qq(Trying to call non-class method '$method');
     }
     if (@_) {
-        return $self->{$method} = $_[0];
+        die 'TODO';
     } else {
         return $self->{$method};
     }

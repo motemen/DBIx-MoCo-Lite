@@ -1,30 +1,26 @@
 use strict;
 use Test::More;
-use Test::mysqld;
 
-our $mysql = Test::mysqld->new(my_cnf => { 'skip-networking' => '' })
-    or plan skip_all => $Test::mysqld::errstr;
+unlink './t/t.db';
 
 {
     package t::MoCo::DataBase;
     use parent 'DBIx::MoCo::Lite::DataBase';
 
-    __PACKAGE__->dsn($mysql->dsn(dbname => 'test'));
+    __PACKAGE__->dsn('dbi:SQLite:./t/t.db');
     __PACKAGE__->dbh->do(<<__CREATE_TABLE__);
 CREATE TABLE foo (
-    id INT UNSIGNED AUTO_INCREMENT,
-    value TEXT,
-    PRIMARY KEY (id)
+    id INTEGER PRIMARY KEY,
+    value TEXT
 );
 __CREATE_TABLE__
 
     __PACKAGE__->dbh->do(<<__CREATE_TABLE__);
 CREATE TABLE bar (
-    id INT UNSIGNED AUTO_INCREMENT,
+    id INTEGER PRIMARY KEY,
     foo_id INT UNSIGNED NOT NULL,
     value TEXT,
-    PRIMARY KEY (id),
-    UNIQUE KEY (foo_id)
+    UNIQUE (foo_id)
 );
 __CREATE_TABLE__
 
@@ -92,5 +88,7 @@ is +t::MoCo::Foo->search->size, 2;
 t::MoCo::Foo->create(value => $_) for 1 .. 10;
 
 is +t::MoCo::Foo->search(offset => 3, limit => 5, order => 'id')->size, 5;
+
+unlink './t/t.db';
 
 done_testing;

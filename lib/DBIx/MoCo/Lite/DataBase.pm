@@ -24,7 +24,7 @@ sub dbh {
 sub execute {
     my $class = shift;
     my ($sql, $data, $binds) = @_;
-    my $sth = $class->dbh->prepare($sql);
+    my $sth = $class->dbh->prepare($sql) or confess $class->dbh->errstr;
     $sth->execute(@{ $binds || [] }) or confess $sth->errstr;
     if (ref $data) {
         $$data = $sth->fetchall_arrayref({});
