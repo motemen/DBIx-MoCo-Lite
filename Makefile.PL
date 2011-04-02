@@ -14,7 +14,7 @@ requires 'Class::Data::Inheritable';
 requires 'List::Rubyish';
 
 tests 't/*.t';
-author_tests 'xt';
+recursive_author_tests 'xt';
 
 test_requires 'Test::More';
 test_requires 'Test::mysqld' if $Module::Install::AUTHOR;
